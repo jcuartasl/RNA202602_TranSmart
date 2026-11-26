@@ -1,0 +1,11 @@
+{
+  "batch_size": 128,
+  "dropout": 0.2,
+  "embedding_dim": 16,
+  "hidden_dim": 32,
+  "latent_dim": 24,
+  "learning_rate": 0.005,
+  "negative_ratio": 2.0,
+  "patience": 4,
+  "weight_decay": 0.0001
+}

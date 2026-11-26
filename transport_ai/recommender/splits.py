@@ -64,6 +64,21 @@ def build_split(processed: Path, seed: int = 42, cold_fraction: float = 0.15, po
         else:
             grouped[(u, destinations[0])] = "train"
 
+    # Reservar valoraciones explicitamente NO positivas (1-3) para una BCE
+    # de validacion real, sin tratar ausencias como negativos ni tocar test.
+    # Proporcion 1:1 con los positivos warm de validacion; se priorizan los
+    # mismos usuarios de validacion para no introducir cold-start inadvertido.
+    val_users = {u for (u, _d), split in grouped.items() if split == "validation"}
+    n_val_positive = sum(split == "validation" for split in grouped.values())
+    eligible_negative = sorted(pair for pair, split in grouped.items()
+                               if split == "observed_nonpositive" and pair[0] not in cold_users)
+    rng_negative = random.Random(seed + 7919)
+    rng_negative.shuffle(eligible_negative)
+    eligible_negative.sort(key=lambda pair: pair[0] not in val_users)
+    reserved_negative = eligible_negative[:n_val_positive]
+    for pair in reserved_negative:
+        grouped[pair] = "validation_nonpositive"
+
     # Todos los registros del usuario cold-start se retienen fuera del entrenamiento.
     for pair, part in list(grouped.items()):
         if pair[0] in cold_users and part == "observed_nonpositive":
@@ -91,6 +106,11 @@ def build_split(processed: Path, seed: int = 42, cold_fraction: float = 0.15, po
         "cold_users_ids_file": "cold_user_ids.csv",
         "users_with_no_positive": len(ids - set(positive_pairs)),
         "conflicted_pairs": len(conflicted),
+        "validation_bce_design": "Solo etiquetas explicitas 4-5 (positivas) y 1-3 (no positivas); "
+                                  "las negativas de validacion se excluyen del entrenamiento; "
+                                  "submuestreo 1:1 si hay suficientes candidatas warm",
+        "validation_bce_positive_count": n_val_positive,
+        "validation_bce_nonpositive_count": len(reserved_negative),
         "warnings": [
             "Hay pocas interacciones por usuario: la validación warm puede ser pequeña.",
             "No considerar ítems no observados como negativos verdaderos.",

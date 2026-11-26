@@ -106,8 +106,8 @@ def make_figures(processed: Path, reports: Path, neural_artifact: Path,
         fig.tight_layout()
         save(fig, "m3_04_embeddings_pca_train.png")
 
-    # 5. Curvas por época: hay BCE de TRAIN y NDCG de VALIDACIÓN.
-    # No se denomina 'validation loss': sería matemáticamente falso.
+    # 5. Curvas de BCE train / validacion y NDCG de validacion.
+    # Validacion BCE usa negativos explicitos reservados antes de entrenar.
     training_results = training_results or (reports.parent / "neural")
     run_file = training_results / "neural_validation_runs.json"
     if run_file.is_file():
@@ -151,6 +151,22 @@ def make_figures(processed: Path, reports: Path, neural_artifact: Path,
             ax.grid(alpha=0.2, axis="y")
             fig.tight_layout()
             save(fig, "m3_07_boxplot_semillas.png")
+            selected_run = next((r for r in runs if int(r["seed"]) == int(ckpt["seed"])), None)
+            if selected_run and selected_run["curves"] and all(
+                    "validation_bce" in point for point in selected_run["curves"]):
+                fig, ax = plt.subplots(figsize=(9, 4.5))
+                curve = selected_run["curves"]
+                xs = [p["epoch"] for p in curve]
+                ax.plot(xs, [p["train_bce"] for p in curve], "o-", label="BCE entrenamiento")
+                ax.plot(xs, [p["validation_bce"] for p in curve], "o-", label="BCE validación")
+                ax.axvline(int(selected_run["best_epoch"]), color="gray", linestyle="--",
+                           linewidth=1, label="Mejor época (NDCG)")
+                ax.set(xlabel="Época", ylabel="BCEWithLogitsLoss promedio",
+                       title=f"M3 - Pérdida train vs validación (semilla {ckpt['seed']})")
+                ax.legend()
+                ax.grid(alpha=0.2)
+                fig.tight_layout()
+                save(fig, "m3_10_curvas_bce_train_validation.png")
 
     search_file = training_results / "search_results.json"
     if search_file.is_file():
@@ -204,4 +220,4 @@ def make_figures(processed: Path, reports: Path, neural_artifact: Path,
 
     return {"figure_count": len(created), "figures": created,
             "training_results_source": str(training_results),
-            "note": "PCA de ítems vistos en entrenamiento; no valida clusters causales. No se generó pérdida de validación."}
+            "note": "PCA de ítems vistos en entrenamiento; no valida clusters causales. BCE(validation) exige una reserva de no-positivos explícitos."}

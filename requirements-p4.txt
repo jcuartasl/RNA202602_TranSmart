@@ -1,0 +1,8 @@
+# P4 TranSmart. Validado localmente: Windows, Python 3.13.9, CPU.
+# torch 2.15.0+cpu local se satisface con torch==2.15.0.
+# Para forzar ruedas CPU (PyTorch oficial):
+# python -m pip install -r requirements-p4.txt --extra-index-url https://download.pytorch.org/whl/cpu
+# No editar requirements.txt compartido hasta coordinacion con P5.
+torch==2.15.0
+numpy==2.5.5
+matplotlib==3.11.2

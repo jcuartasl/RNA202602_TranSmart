@@ -101,7 +101,9 @@ class ReportingTest(unittest.TestCase):
         figures = make_figures(self.processed, self.results, self.weights / "best.pt",
                                self.root / "separate_figures", split="validation", training_results=separate)
         self.assertEqual(figures["training_results_source"], str(separate))
-        self.assertEqual(figures["figure_count"], 8)
+        self.assertEqual(figures["figure_count"], 9)
+        self.assertTrue(any(str(p).endswith("m3_10_curvas_bce_train_validation.png")
+                            for p in figures["figures"]))
         self.assertTrue((self.root / "separate_figures" / "m3_07_boxplot_semillas.png").is_file())
 
 

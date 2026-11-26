@@ -66,6 +66,18 @@ def fit_one(bundle: dict, context: dict, config: dict, *, seed: int, epochs: int
     optimizer = torch.optim.AdamW(model.parameters(), lr=float(config["learning_rate"]),
                                   weight_decay=float(config["weight_decay"]))
     loss_fn = nn.BCEWithLogitsLoss()
+    # BCE de validacion: pares observados reservados y nunca usados para
+    # optimizar. No se inventan negativos a partir de destinos no visitados.
+    val_examples = [
+        (r["user_id"], r["destination_id"], float(r["split"] == "validation"))
+        for r in context["manifest"]
+        if r["split"] in ("validation", "validation_nonpositive")
+    ]
+    val_positive = sum(y == 1.0 for _u, _d, y in val_examples)
+    val_negative = len(val_examples) - val_positive
+    if not val_positive or not val_negative:
+        raise ValueError("BCE de validacion requiere positivos y no positivos separados; "
+                         "regenera prepare-entities en otra carpeta")
     positives = [(u, d) for u, d, y in bundle["examples"] if y == 1]
     negatives = [(u, d) for u, d, y in bundle["examples"] if y == 0]
     max_neg = min(len(negatives), round(len(positives) * float(config["negative_ratio"])))
@@ -97,12 +109,22 @@ def fit_one(bundle: dict, context: dict, config: dict, *, seed: int, epochs: int
             total_loss += loss.item() * len(batch)
         loss_train = total_loss / len(examples)
         model.eval()
+        validation_loss_sum = 0.0
+        with torch.no_grad():
+            for start in range(0, len(val_examples), int(config["batch_size"])):
+                batch = val_examples[start:start + int(config["batch_size"])]
+                val_inputs = arrays_for_pairs(bundle, [(u, d) for u, d, _y in batch])
+                val_labels = torch.tensor([y for _u, _d, y in batch], dtype=torch.float32)
+                val_logits = model(*val_inputs)
+                validation_loss_sum += loss_fn(val_logits, val_labels).item() * len(batch)
+        loss_validation = validation_loss_sum / len(val_examples)
         val_metrics = evaluate_model(model, bundle, context, "validation", k)
         score = val_metrics["ndcg_at_k"]
         # Con validación sin usuarios/positivos, hay que revisar split antes de entrenar.
         if score is None:
             raise ValueError("Validación vacía: no se puede elegir checkpoint")
         curves.append({"epoch": epoch, "train_bce": round(loss_train, 7),
+                       "validation_bce": round(loss_validation, 7),
                        "validation_ndcg_at_k": score})
         if score > best_metric + 1e-12:
             best_metric, best_loss = score, loss_train
@@ -116,6 +138,11 @@ def fit_one(bundle: dict, context: dict, config: dict, *, seed: int, epochs: int
     result = evaluate_model(model, bundle, context, "validation", k)
     result.update({"seed": seed, "best_epoch": best_epoch, "epochs_ran": len(curves),
                    "train_loss_at_best": best_loss,
+                   "validation_bce_at_best": next(p["validation_bce"] for p in curves
+                                                  if p["epoch"] == best_epoch),
+                   "validation_bce_sample_size": len(val_examples),
+                   "validation_bce_positive_count": val_positive,
+                   "validation_bce_nonpositive_count": val_negative,
                    "seconds": round(time.perf_counter() - started, 3),
                    "parameters": model.count_parameters(), "curves": curves,
                    "explicit_positive_count": len(positives), "explicit_nonpositive_pool": len(negatives),
@@ -186,6 +213,7 @@ def train_seeds(processed: Path, output: Path, artifacts: Path, *, seeds: int = 
                "metrics": _summary(reports, ("precision_at_k", "recall_at_k", "ndcg_at_k", "catalog_coverage")),
                "total_train_seconds": round(sum(r["seconds"] for r in reports), 3),
                "uses_only_explicit_ratings_as_negatives": True,
+               "validation_bce_uses_heldout_explicit_nonpositives": True,
                "test_evaluated": False}
     write_json(output / "neural_validation_runs.json", {"runs": reports, "summary": summary})
     write_json(output / "neural_validation_summary.json", summary)
