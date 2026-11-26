@@ -1,0 +1,13 @@
+
+# Python - archivos generados
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Entornos virtuales
+.venv/
+venv/
+.venv_p4/
+
+# Archivos locales
+.env
