@@ -1,0 +1,50 @@
+{
+  "config": {
+    "batch_size": 128,
+    "dropout": 0.2,
+    "embedding_dim": 16,
+    "hidden_dim": 32,
+    "latent_dim": 24,
+    "learning_rate": 0.005,
+    "negative_ratio": 2.0,
+    "patience": 4,
+    "weight_decay": 0.0001
+  },
+  "k": 1,
+  "metrics": {
+    "per_metric": {
+      "catalog_coverage": {
+        "best": 1.0,
+        "mean": 0.72,
+        "std": 0.22034455776789913,
+        "worst": 0.4
+      },
+      "ndcg_at_k": {
+        "best": 0.5882352941176471,
+        "mean": 0.3568627450980392,
+        "std": 0.13101836343768333,
+        "worst": 0.11764705882352941
+      },
+      "precision_at_k": {
+        "best": 0.5882352941176471,
+        "mean": 0.3568627450980392,
+        "std": 0.13101836343768333,
+        "worst": 0.11764705882352941
+      },
+      "recall_at_k": {
+        "best": 0.5882352941176471,
+        "mean": 0.3568627450980392,
+        "std": 0.13101836343768333,
+        "worst": 0.11764705882352941
+      }
+    },
+    "seeds": 30
+  },
+  "model_parameters": 15009,
+  "selected_seed": 42,
+  "selection_split": "validation",
+  "test_evaluated": false,
+  "total_train_seconds": 32.873,
+  "uses_only_explicit_ratings_as_negatives": true,
+  "validation_bce_uses_heldout_explicit_nonpositives": true
+}
