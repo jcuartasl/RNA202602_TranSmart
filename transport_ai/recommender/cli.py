@@ -40,7 +40,8 @@ def run() -> None:
     parser.add_argument("--split", choices=["validation", "test", "cold_test"], default="validation")
     parser.add_argument("--user-id", default=None)
     parser.add_argument("--preferences", default=None)
-    parser.add_argument("--method", choices=["popularity", "item-knn", "content", "neural"], default="content")
+    parser.add_argument("--preference-boost", type=float, default=0.02)
+    parser.add_argument("--method", choices=["popularity", "item-knn", "content", "neural", "neural-hybrid"], default="content")
     args = parser.parse_args()
 
     if args.command in ("audit", "prepare"):
@@ -122,7 +123,8 @@ def run() -> None:
         profile = {"preferences": args.preferences} if args.preferences is not None else None
         result = recommend(user_id=args.user_id, profile=profile, k=args.k, method=args.method,
                            processed=args.output, artifact=args.artifact,
-                           neural_artifact=args.neural_artifacts / "best.pt")
+                           neural_artifact=args.neural_artifacts / "best.pt",
+                            preference_boost=args.preference_boost)
         print(json.dumps(result, ensure_ascii=False, indent=2))
 
 

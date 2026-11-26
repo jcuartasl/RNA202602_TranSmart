@@ -8,6 +8,7 @@ from pathlib import Path
 
 from .classical import load_knn
 from .coldstart import score_content
+from .reranking import rerank_by_preferences
 from .evaluation import rank_ids
 from .classical import score_knn
 from .data import read_csv
@@ -21,7 +22,8 @@ DEFAULT_ARTIFACT = Path("artifacts/recommender/item_knn.json")
 def recommend(user_id: str | None = None, profile: dict | None = None, k: int = 5,
               method: str = "content", processed: Path = DEFAULT_PROCESSED,
               artifact: Path = DEFAULT_ARTIFACT,
-              neural_artifact: Path = Path("artifacts/recommender/neural/best.pt")) -> list[dict]:
+              neural_artifact: Path = Path("artifacts/recommender/neural/best.pt"),
+               preference_boost: float = 0.02) -> list[dict]:
     """Devuelve lista ordenada sin repetir, con historial train/observado únicamente.
 
     `profile={'preferences': 'Beach, Nature'}` para un nuevo usuario.
@@ -56,11 +58,15 @@ def recommend(user_id: str | None = None, profile: dict | None = None, k: int = 
         raise ValueError("item-knn necesita historial; para nuevos usuarios usa 'content' o 'popularity'")
     knn = load_knn(artifact) if method == "item-knn" else None
     user = user_id or ""
-    if method == "neural":
+    if method in ("neural", "neural-hybrid"):
         from .neural import load_checkpoint, score_catalog
         model, bundle, _saved = load_checkpoint(neural_artifact, processed)
         selected_profile = profile if profile is not None else (profiles[user] if user_id else None)
         scores = score_catalog(model, bundle, user_id, profile=selected_profile)
+        if method == "neural-hybrid":
+            preferences = (selected_profile.get("preferences", selected_profile.get("Preferences", ""))
+                           if selected_profile else "")
+            scores = rerank_by_preferences(scores, catalog, preferences, preference_boost)
     elif method == "content":
         preferences = profile.get("preferences", "") if profile is not None else profiles[user]["preferences"]
         scores = score_content(catalog_rows, preferences, popularity)
@@ -80,6 +86,8 @@ def recommend(user_id: str | None = None, profile: dict | None = None, k: int = 
         dest = catalog[d]
         if method == "content":
             reason = "Coincidencia con preferencias declaradas" if scores.get(d, 0) >= 1 else "Alternativa del catálogo"
+        elif method == "neural-hybrid":
+            reason = "Ranking neuronal con bonificacion explicita de preferencias (experimental)"
         elif method == "neural":
             reason = "Ranking neuronal: identificadores y categorías/preferencias"
         elif method == "item-knn":
