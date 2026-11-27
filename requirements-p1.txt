@@ -1,0 +1,12 @@
+# P1 / M1 TranSmart. Validado localmente: Windows 11, Python 3.12.10, CPU (4 núcleos).
+# No editar requirements.txt compartido hasta coordinación con P5.
+torch==2.15.0
+numpy==2.5.3
+pandas==3.0.6
+pyarrow==26.0.1
+scikit-learn==1.9.1
+pyyaml==6.0.3
+matplotlib==3.11.2
+python-dateutil==2.9.0.post0
+joblib==1.6.0
+pytest==9.1.1
