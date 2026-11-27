@@ -12,6 +12,7 @@ htmlcov/
 
 # Virtual environments
 .venv/
+.venv_p4/
 venv/
 ENV/
 env/
@@ -31,12 +32,9 @@ Thumbs.db
 .idea/
 *.swp
 
-# Heavy raw datasets & temporary checkpoints (keep .gitkeep)
+# Heavy raw datasets & temporary files (keep committed artifacts/)
 data/raw/
 *.ckpt
-*.pt
-*.pth
-*.h5
-*.onnx
+*.tmp.pt
 *.zip
 *.tar.gz

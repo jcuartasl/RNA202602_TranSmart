@@ -1,0 +1,69 @@
+{
+  "catalog_ids": [
+    "place_0001",
+    "place_0002",
+    "place_0003",
+    "place_0004",
+    "place_0005"
+  ],
+  "cooccurrence_item_pairs": 4,
+  "fitted_splits": [
+    "train"
+  ],
+  "items_with_neighbors": 4,
+  "model": "item_knn_cosine_train_only",
+  "neighbors": 20,
+  "neighbors_by_item": {
+    "place_0001": [
+      {
+        "destination_id": "place_0005",
+        "similarity": 0.013157894736842105
+      },
+      {
+        "destination_id": "place_0003",
+        "similarity": 0.012988108336653278
+      }
+    ],
+    "place_0002": [],
+    "place_0003": [
+      {
+        "destination_id": "place_0001",
+        "similarity": 0.012988108336653278
+      },
+      {
+        "destination_id": "place_0005",
+        "similarity": 0.012988108336653278
+      }
+    ],
+    "place_0004": [
+      {
+        "destination_id": "place_0005",
+        "similarity": 0.013157894736842105
+      }
+    ],
+    "place_0005": [
+      {
+        "destination_id": "place_0001",
+        "similarity": 0.013157894736842105
+      },
+      {
+        "destination_id": "place_0004",
+        "similarity": 0.013157894736842105
+      },
+      {
+        "destination_id": "place_0003",
+        "similarity": 0.012988108336653278
+      }
+    ]
+  },
+  "note": "Si faltan vecinos para un usuario, se utiliza popularidad del entrenamiento como respaldo.",
+  "positive_counts": {
+    "place_0001": 76,
+    "place_0002": 67,
+    "place_0003": 78,
+    "place_0004": 76,
+    "place_0005": 76
+  },
+  "train_positive_interactions": 373,
+  "train_users": 370
+}
