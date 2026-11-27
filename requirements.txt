@@ -1,5 +1,9 @@
+# Dependencias base de la plataforma (P5) y Módulo 3 integrado (P4).
+# Se agregarán/fijarán las dependencias específicas de P1–P3 al integrar sus módulos.
 streamlit
 pandas
 numpy
 pillow
 pytest
+torch
+matplotlib
