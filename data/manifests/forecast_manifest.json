@@ -1,0 +1,65 @@
+{
+  "fuente": "Superintendencia de Transporte - datos.gov.co: Operación de pasajeros y despacho de vehículos en la modalidad de transporte de pasajeros por carretera",
+  "raw_sha256": "1e1a04056d11b7aa2f389d00abc19c17af39e6ae339e619600d38c445a757cab",
+  "raw_filas": 32669785,
+  "periodo": [
+    "2021-01-01",
+    "2023-12-31"
+  ],
+  "tipo_despacho": "ORIGEN",
+  "rutas_totales": 1856,
+  "rutas_aptas": 175,
+  "rutas_seleccionadas": [
+    "05001-05615",
+    "50001-11001",
+    "66001-63001",
+    "63001-63401",
+    "66001-66682",
+    "73001-11001",
+    "05001-05440",
+    "15238-15759",
+    "25307-11001",
+    "66001-76147",
+    "13001-13052",
+    "13001-08001",
+    "05001-05318",
+    "63001-66001",
+    "15759-15238",
+    "17001-17174",
+    "25290-11001",
+    "11001-50001",
+    "73001-25307",
+    "15238-15001"
+  ],
+  "dias_apagon_reporte": 0,
+  "rutas_con_codigo_fuera_de_divipola": 0,
+  "splits": {
+    "train": [
+      "2021-07-01",
+      "2022-12-31"
+    ],
+    "val": [
+      "2023-01-01",
+      "2023-06-30"
+    ],
+    "test": [
+      "2023-07-01",
+      "2023-12-31"
+    ]
+  },
+  "archivos": {
+    "anomalias_crudo.csv": "4ce420333b82e7cb5a1759d2fcf14f79f9b4f4a26c168bbf40c43d7ce69232eb",
+    "anomalias_series.csv": "f6fb08bb3fe2c38e4f9ff99770aecc9b8a4f4839761bf8d7817ca1c80d310e92",
+    "auditoria_crudo.json": "4a61324df38de4a5eb314cf611f59892e88b85cfcdaaf6f0fb319dff66783c99",
+    "calendario_2022.parquet": "ae60217aa44d02937b9e87ad728999f3cafb12185a9b1d91aa7c000b7e6ecb9a",
+    "cobertura_rutas.parquet": "c559b6c657212abee1aba763afec5a40dc9b12b092b4620d35f64dbf4a768213",
+    "metadata_2022_top20.parquet": "7c2be7c293a83e4f5334dbcae5ed936bdf40cd78acd86a1d977f9684add2fe62",
+    "rutas.parquet": "ecd777d8b386611dbcd085e9d8f1507b885400a90bd9a6ad892bcded06e8b8b3",
+    "rutas_aptas_2022.parquet": "28018b9c060bbc9ab11fb4cac984ec16fb182d4e63b2467243cda9ae532094e6",
+    "series.parquet": "65f1c799c226340e8555f603d69109d80d87f58d6107ea928e7c646736342c52",
+    "series_con_features_2022.parquet": "b88348b0f3895d361cd05e071c85f674de2672733eba3e3fca0dd9a1815a544e",
+    "series_diarias.parquet": "3e3c208c4e985b2c71a95fbaafdb5dae7f900d92f52cef8c9c8046cebbff8254",
+    "series_diarias_clean.parquet": "41b209f9c4a63834e7bdf556ade4c398ba3bd47430fa61d60885f52cc28024ca",
+    "splits_2022_top20.json": "183ad983a329775c1ee7c274d9728a1cf7a1733e6f3604f13c597ab09c3c192d"
+  }
+}

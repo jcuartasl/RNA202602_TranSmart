@@ -1,192 +1,64 @@
-# Configuración P1 - Pronóstico de demanda
-# Todos los parámetros editables sin tocar código fuente
+# M1 / P1 — Pronóstico de demanda. Editable sin tocar código (python -m transport_ai.forecasting.cli --config ruta.yaml)
 
 data:
-  # Fuente: Superintendencia de Transporte / datos.gov.co
-  # Dataset: "Operación de pasajeros y despacho de vehículos en la modalidad de transporte de pasajeros por carretera"
-  source_url: "https://www.datos.gov.co/resource/xxxx-xxxx.csv"  # TODO: URL exacta
-  raw_path: "data/raw/operacion_pasajeros.csv"
-  processed_dir: "data/processed/forecasting"
-  manifest_path: "data/manifests/forecast_manifest.csv"
-  divipola_path: "data/raw/divipola_municipios.csv"  # Códigos DANE oficiales
-
-  # Columnas esperadas en el dataset crudo (según diccionario oficial)
-  expected_columns:
-    - fecha_despacho
-    - origen_divipola
-    - destino_divipola
-    - pasajeros_abordados
-    - vehiculos_despachados
-    - clase_vehiculo
-    - empresa_transportadora
-
-  # Rutas a analizar (origen_divipola → destino_divipola)
-  # Formato: "ORIGEN-DESTINO" con códigos DIVIPOLA de 5 dígitos (ceros iniciales preservados)
-  routes:
-    - "11001-05001"  # Bogotá → Medellín
-    - "11001-76001"  # Bogotá → Cali
-    - "05001-13001"  # Medellín → Cartagena
-    - "76001-08001"  # Cali → Barranquilla
-
-  # Frecuencia de la serie temporal
-  freq: "D"  # Diaria
+  # Superintendencia de Transporte (datos.gov.co): "Operación de pasajeros y despacho de vehículos
+  # en la modalidad de transporte de pasajeros por carretera", recurso eh75-8ah6, CC BY-SA 4.0.
+  # Detalle en data/processed/forecasting/DICCIONARIO.md
+  raw_path: data/raw/operacion_pasajeros.csv
+  processed_dir: data/processed/forecasting
+  divipola_path: data/raw/divipola/divipola.csv  # DANE, datos.gov.co recurso gdxc-w37w (descargado 2026-11-27)
+  tipo_despacho: ORIGEN          # objetivo: pasajeros despachados desde el origen de la ruta
+  inicio: "2021-01-01"           # 2019-2020 y 2025-2026 tienen < 0.1 % de registros; 2024 no existe en el archivo
+  fin: "2023-12-31"
+  cap_pasajeros_por_despacho: 80 # registro con más pasajeros que esto por despacho = error físico
+  seleccion:                     # rutas aptas para modelar (sobre inicio..fin)
+    min_cobertura: 0.98          # fracción de días con algún registro
+    max_hueco: 3                 # días consecutivos máximos sin registro
+    min_media: 100               # pasajeros/día medios
+    n_rutas: 20                  # las de mayor volumen entre las aptas (modelo global)
 
 features:
-  # Ventana de rezagos para modelos (días de historia como entrada)
-  window_size: 30
-
-  # Horizonte de pronóstico (días hacia adelante)
   horizon: 30
+  window: 56                     # días de historia (se ajusta en la búsqueda)
+  quantiles: [0.75, 0.8, 0.85, 0.9, 0.95]
 
-  # Variables de calendario a incluir
-  calendar:
-    holidays: true
-    bridge_days: true  # Puentes festivos
-    school_calendar: true
-    easter_week: true
-    year_end: true
-    day_of_week: true
-    month: true
-    day_of_year: true
+splits:                          # por fecha de los días OBJETIVO: ninguna ventana cruza dos particiones
+  train: ["2021-07-01", "2022-12-31"]  # excluye como objetivo el confinamiento y el paro nacional de 2021-S1
+  val:   ["2023-01-01", "2023-06-30"]  # selección de modelos/hiperparámetros (incluye Semana Santa 2023)
+  test:  ["2023-07-01", "2023-12-31"]  # solo evaluación final (vacaciones de julio + temporada de diciembre)
 
-  # Tratamiento de días sin registros
-  # 'zero' = asumir 0 pasajeros | 'interpolate' = interpolar | 'flag' = marcar como NaN
-  missing_days_policy: "zero"
+train:
+  loss: mae                      # mae | poisson (sobre demanda escalada por ruta)
+  lr: 0.001
+  weight_decay: 0.0001
+  batch_size: 256
+  max_epochs: 80
+  patience: 8
+  threads: 4
 
-  # Detección de anomalías
-  anomaly_detection:
-    enabled: true
-    max_passengers_per_dispatch: 100  # Umbral para despachos anómalos
-    zero_dispatch_threshold: 0.05  # Fracción de despachos con 0 pasajeros permitida
-
-splits:
-  # Particiones temporales (origen rodante / rolling origin)
-  # Formato: YYYY-MM-DD
-  train_end: "2024-12-31"
-  val_start: "2025-01-01"
-  val_end: "2025-06-30"
-  test_start: "2025-07-01"
-  test_end: "2025-12-31"
-
-  # Orígenes de evaluación (rolling origin) - fechas de corte para backtesting
-  # Debe incluir al menos una temporada alta en test (ej. fin de año, semana santa)
-  rolling_origins:
-    - "2025-07-01"
-    - "2025-08-01"
-    - "2025-09-01"
-    - "2025-10-01"
-    - "2025-11-01"
-    - "2025-12-01"
-
-  # Ventana de reentrenamiento simulada (días entre orígenes)
-  retrain_window_days: 30
-
-baselines:
-  # Baseline 1: Ingenuo estacional (mismo día de la semana anterior)
-  naive_seasonal:
-    enabled: true
-    seasonal_period: 7  # Semanal
-
-  # Baseline 2: Estadístico / Lineal
-  # Opciones: "sarima", "ets", "linear_lags"
-  statistical:
-    enabled: true
-    method: "linear_lags"  # Regresión lineal con rezagos + calendario
-    # Para SARIMA: (p,d,q)(P,D,Q,m)
-    sarima_order: [1, 1, 1]
-    sarima_seasonal_order: [1, 1, 1, 7]
-
-models:
-  # MLP (Perceptrón Multicapa) con ventana de rezagos
+search:                          # búsqueda aleatoria, 1 semilla por configuración, selección por MASE de validación
+  seed: 1000
+  budget: {ridge: 8, mlp: 16, gru: 12}
+  ridge: {alpha: [0.1, 1, 10, 100], window: [28, 56]}
   mlp:
-    enabled: true
-    input_size: null  # Se calcula: window_size * n_features
-    hidden_layers: [128, 64, 32]
-    output_size: 30  # Multi-output directo: 30 días
-    dropout: 0.2
-    activation: "relu"
-    use_batch_norm: true
-
-  # Arquitectura secuencial: GRU (más ligera que LSTM, similar rendimiento)
+    window: [28, 56]
+    hidden: [[256, 128], [512, 256], [256, 256, 128], [128, 64]]
+    dropout: [0.0, 0.1, 0.2, 0.3]
+    lr: [0.0003, 0.001, 0.003]
+    loss: [mae, poisson]
   gru:
-    enabled: true
-    input_size: null  # n_features por paso temporal
-    hidden_size: 64
-    num_layers: 2
-    output_size: 30  # Multi-output directo
-    dropout: 0.2
-    bidirectional: false
+    window: [28, 56]
+    hidden: [32, 64, 128]
+    layers: [1, 2]
+    dropout: [0.0, 0.1, 0.2]
+    lr: [0.001, 0.003]
+    loss: [mae, poisson]
 
-  # Entrenamiento común
-  training:
-    loss: "poisson_nll"  # Opciones: "poisson_nll", "negbin", "mse", "pinball"
-    quantile: 0.90  # Para pérdida pinball / P90
-    pinball_weight: 0.5  # Peso de pérdida pinball en pérdida combinada
-    optimizer: "adamw"
-    learning_rate: 0.001
-    weight_decay: 1e-4
-    batch_size: 64
-    max_epochs: 100
-    early_stopping_patience: 10
-    early_stopping_min_delta: 1e-4
-    gradient_clip: 1.0
-
-  # Búsqueda de hiperparámetros
-  hyperparameter_search:
-    enabled: true
-    method: "random"  # "random", "grid", "optuna"
-    n_trials: 30
-    timeout_seconds: 3600
-    # Espacio de búsqueda
-    mlp:
-      hidden_layers:
-        - [64, 32]
-        - [128, 64, 32]
-        - [256, 128, 64]
-      dropout: [0.1, 0.2, 0.3]
-      learning_rate: [0.0005, 0.001, 0.002]
-    gru:
-      hidden_size: [32, 64, 128]
-      num_layers: [1, 2]
-      dropout: [0.1, 0.2]
-      learning_rate: [0.0005, 0.001, 0.002]
-
-  # 30 semillas independientes para configuración final
-  seeds:
-    count: 30
-    start_seed: 42
-    deploy_seed: 42  # Semilla fija pre-definida ANTES de ver test (no la mejor)
+seeds:
+  n: 30
+  start: 42
+  deploy: 42                     # fijada antes de ver test: el artefacto desplegado es esta semilla
 
 inference:
-  # Configuración para inferencia en producción / app
-  model_version: "v1.0.0"
-  artifact_dir: "artifacts/forecasting"
-  # Qué modelo usar para inferencia: "mlp" o "gru"
-  default_model: "gru"
-
-evaluation:
-  # Métricas a reportar
-  metrics:
-    - "mae"
-    - "rmse"
-    - "mase"
-    - "pinball"
-    - "coverage"
-
-  # Tramos de horizonte para reporte detallado
-  horizon_segments:
-    - [1, 7]
-    - [8, 14]
-    - [15, 30]
-
-  # MASE: período estacional para denominador (7 = semanal)
-  mase_seasonal_period: 7
-
-  # Cobertura P90 objetivo (referencia de calibración)
-  target_coverage: 0.90
-
-output:
-  # Directorios de salida
-  experiments_dir: "experiments/m1"
-  figures_dir: "reports/figures"
-  tables_dir: "reports/tables"
+  model_version: m1-v2
+  default_model: auto            # auto = arquitectura con mejor MASE medio de VALIDACIÓN en las 30 semillas

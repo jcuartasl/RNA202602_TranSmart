@@ -1,0 +1,22 @@
+{
+  "raw_path": "data/raw/operacion_pasajeros.csv",
+  "raw_sha256": "1e1a04056d11b7aa2f389d00abc19c17af39e6ae339e619600d38c445a757cab",
+  "filas": 32669785,
+  "filas_invalidas": 3,
+  "duplicados_exactos": 6406283,
+  "registros_pax0_con_despacho": 5175110,
+  "registros_exceso_capacidad": 0,
+  "cap_pasajeros_por_despacho": 80,
+  "fecha_min": "2019-08-04",
+  "fecha_max": "2026-02-28",
+  "registros_por_anio": {
+    "2019": 77,
+    "2020": 14264,
+    "2021": 9959765,
+    "2022": 12014054,
+    "2023": 10657157,
+    "2025": 12984,
+    "2026": 11481
+  },
+  "rutas_dirigidas": 3286
+}

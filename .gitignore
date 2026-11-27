@@ -11,3 +11,6 @@ venv/
 
 # Archivos locales
 .env
+
+# Datos crudos (2.6 GB, se descargan; ver transport_ai/forecasting/README.md)
+data/raw/
